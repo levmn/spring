@@ -1,6 +1,8 @@
 package br.org.generation.games.service;
 
 import java.nio.charset.Charset;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.Optional;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,10 @@ public class UsuarioService {
 		if(usuarioRepository.findByUsuario(usuario.getUsuario()).isPresent())
 			return Optional.empty();
 		
+		if(calcularIdade(usuario.getDataNascimento()) < 18)
+			throw new ResponseStatusException(
+					HttpStatus.BAD_REQUEST, "usuário menor de 18 anos!", null);	
+		
 		usuario.setSenha(criptografarSenha(usuario.getSenha()));
 		
 		return Optional.of(usuarioRepository.save(usuario));
@@ -37,6 +43,10 @@ public class UsuarioService {
 			if((buscaUsuario.isPresent()) && (buscaUsuario.get().getId() != usuario.getId()))
 				throw new ResponseStatusException(
 						HttpStatus.BAD_REQUEST, "usuário já existe!", null);
+			
+			if(calcularIdade(usuario.getDataNascimento()) < 18)
+				throw new ResponseStatusException(
+						HttpStatus.BAD_REQUEST, "usuário menor de 18 anos!", null);			
 			
 			usuario.setSenha(criptografarSenha(usuario.getSenha()));
 			
@@ -83,6 +93,10 @@ public class UsuarioService {
 		String token = usuario + ":" + senha;
 		byte[] tokenBase64 = Base64.encodeBase64(token.getBytes(Charset.forName("US-ASCII")));
 		return "Basic" + new String(tokenBase64);
+	}
+	
+	private int calcularIdade(LocalDate dataNascimento) {
+		return Period.between(dataNascimento, LocalDate.now()).getYears();
 	}
 	
 }
